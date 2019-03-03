@@ -1,10 +1,4 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: cip
- * Date: 02.03.2019
- * Time: 16:15
- */
 
 namespace Sagital\NopProductExporter\Console\Command;
 use Magento\Framework\App\Filesystem\DirectoryList;

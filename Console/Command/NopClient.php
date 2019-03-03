@@ -1,10 +1,4 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: cip
- * Date: 16.12.2018
- * Time: 12:03
- */
 
 namespace Sagital\NopProductExporter\Console\Command;
 
@@ -61,34 +55,6 @@ class NopClient
     }
 
 
-//    private function loadProducts($page, $last_update = null)
-//    {
-//
-//        $params = [
-//            'limit' => 200,
-//            'page' => $page
-//        ];
-//
-//        if ($last_update) {
-//            $params['updated_at_min'] = $last_update;
-//        }
-//
-//
-//        $res = $this->client->get($this->url . "/api/products",
-//            ['headers' => $this->defaultHeaders,
-//                'query' => $params,
-//                'connect_timeout' => 30
-//            ]);
-//
-//        $products = json_decode($res->getBody(), true)['products'];
-//
-//        return array_map(function ($c) {
-//            return Product::fromNopCommerce($c);
-//        }, $products);
-//
-//    }
-
-
     public function getProductsBySku()
     {
 
@@ -96,15 +62,12 @@ class NopClient
 
         $page = 1;
 
-        //while ( $products = $this->getProducts( $page) and $page < 6) {
 
         while ( $products = $this->getProducts( $page)) {
-//        $products = $this->getProducts(4);
             $page++;
             $this->logger->debug("Loading products page $page . ");
 
             foreach ($products as $product) {
-//                $this->logger->debug(json_encode($product));
                 $result[$product['sku']] = $product;
             }
         }
@@ -154,8 +117,6 @@ class NopClient
                 'query' => $params]);
 
         $mappings = json_decode($res->getBody(), true)['product_category_mappings'];
-
-     //   $this->logger->debug(json_encode($mappings));
 
         return array_reduce($mappings, function ($result, $item) {
             $result[$item['product_id']][] = $item['category_id'];
@@ -207,10 +168,6 @@ class NopClient
 
 
     }
-
-
-
-
 
 }
 

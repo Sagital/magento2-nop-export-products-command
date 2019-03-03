@@ -1,10 +1,4 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: cip
- * Date: 25.02.2018
- * Time: 18:12
- */
 
 namespace Sagital\NopProductExporter\Console\Command;
 
@@ -91,7 +85,6 @@ class OAuth
                 'allow_redirects' => false
             ]);
 
-
         $locationHeader = $res->getHeader('Location');
 
         parse_str(parse_url($locationHeader[0], PHP_URL_QUERY), $array);
@@ -99,6 +92,5 @@ class OAuth
         return $array['code'];
 
     }
-
 
 }
