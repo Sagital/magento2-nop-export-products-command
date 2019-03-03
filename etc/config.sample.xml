@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
+    <default>
+        <nop-url>https://catalogmedia.ro</nop-url>
+        <nop-client-id>3f70ce6f-3260-4e97-a795-354f5853392a</nop-client-id>
+        <nop-client-secret>795c8705-cf0b-49f0-95b2-2d77e4514a5a</nop-client-secret>
+        <nop-redirect-uri>http://www.etecla.ro</nop-redirect-uri>
+    </default>
+</config>
