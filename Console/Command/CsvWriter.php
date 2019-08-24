@@ -24,7 +24,7 @@ class CsvWriter
      * @var \Magento\ImportExport\Model\Export\Adapter\Factory
      */
     protected $exportAdapterFactory;
-
+    private $logger;
     /**
      * CsvWriter constructor.
      */
@@ -34,6 +34,8 @@ class CsvWriter
     ) {
         $this->fileFactory = $fileFactory;
         $this->exportAdapterFactory = $exportAdapterFac;
+        $this->logger = \Magento\Framework\App\ObjectManager::getInstance()
+            ->get(\Psr\Log\LoggerInterface::class);
     }
 
     public function writeCsv($products, $mappings, $categories, $fileName)
@@ -49,7 +51,6 @@ class CsvWriter
         $csvWriter->setHeaderCols($headers);
 
         foreach ($products as $product) {
-
             $categoriesText = $this->getCategoriesText($mappings[$product['id']], $categories);
 
             $row = [];
@@ -94,27 +95,87 @@ class CsvWriter
         );
     }
 
-    private function getCategoriesText($productCategories, $categoriesMap)
+    private function addToGraph(array & $graph, $categoryId, $categoriesMap)
     {
-        $parentCategoryId = 0;
-        $categoryNames = ['Default Category'];
-
-        $remaining = count($productCategories);
-
-        while ($remaining > 0) {
-            foreach ($categoriesMap as $categoryId => $category) {
-                if ($category['parent_category_id'] == $parentCategoryId) {
-                    $categoryName = $category['name'];
-                    $categoryName = str_replace("/", "-", $categoryName);
-                    $categoryNames[] = str_replace("+", "plus", $categoryName);
-                    $parentCategoryId = $categoryId;
-                    $remaining--;
-                }
-            }
+        if ($categoryId == 0) {
+            return;
         }
 
-        $categoriesText = join("/", $categoryNames);
+        $parentCategoryId = $categoriesMap[$categoryId]['parent_category_id'];
+
+        if (!array_key_exists($parentCategoryId, $graph)) {
+            $graph[$parentCategoryId] = [];
+        }
+
+        if (!in_array($categoryId, $graph[$parentCategoryId])) {
+            $graph[$parentCategoryId][] = $categoryId;
+        }
+    }
+
+    private function getCategoriesText($productCategories, $categoriesMap)
+    {
+        $graph = [];
+
+        foreach ($productCategories as $categoryId) {
+            if (!array_key_exists($categoryId, $categoriesMap)) {
+                continue;
+            }
+
+            $parentCategoryId = $categoriesMap[$categoryId]['parent_category_id'];
+
+            $this->addToGraph($graph, $categoryId, $categoriesMap);
+            $this->addToGraph($graph, $parentCategoryId, $categoriesMap);
+        }
+
+        $stack = [];
+        $visited = [];
+
+        foreach ($graph as $parent => $children) {
+            $this->dfs($graph, $parent, $stack, $visited);
+        }
+
+        $categoryNames = [];
+
+        $current  = "";
+
+        array_pop($stack);
+
+        while (!empty($stack)) {
+            $id = array_pop($stack);
+
+            if ($categoriesMap[$id]['parent_category_id'] == 0) {
+                if ($current) {
+                    $categoryNames[] = $current;
+                }
+
+                $current = 'Default Category';
+            }
+            $categoryName =   $categoriesMap[$id]['name'];
+            $categoryName = str_replace("/", "-", $categoryName);
+            $categoryName = str_replace("+", "plus", $categoryName);
+            $current .= "/" . $categoryName;
+        }
+
+        $categoryNames[] = $current;
+
+        $categoriesText = join(", ", $categoryNames);
 
         return $categoriesText;
+    }
+
+    private function dfs(array $graph, $node, array & $stack, array & $visited)
+    {
+        if (array_key_exists($node, $visited)) {
+            return;
+        }
+
+        if (array_key_exists($node, $graph)) {
+            foreach ($graph[$node] as $child) {
+                $this->dfs($graph, $child, $stack, $visited);
+            }
+        }
+        array_push($stack, $node);
+
+        $visited[$node] = true;
     }
 }

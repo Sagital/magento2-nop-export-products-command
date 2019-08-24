@@ -62,7 +62,9 @@ class NopClient
             $this->logger->debug("Loading products page $page . ");
 
             foreach ($products as $product) {
-                $result[$product['sku']] = $product;
+                if ($product['published'] && !$product['deleted']) {
+                    $result[$product['sku']] = $product;
+                }
             }
         }
 
