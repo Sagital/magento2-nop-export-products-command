@@ -103,7 +103,7 @@ class CsvWriter
 
         while ($remaining > 0) {
             foreach ($categoriesMap as $categoryId => $category) {
-                if ($category['parent'] == $parentCategoryId) {
+                if ($category['parent_category_id'] == $parentCategoryId) {
                     $categoryName = $category['name'];
                     $categoryName = str_replace("/", "-", $categoryName);
                     $categoryNames[] = str_replace("+", "plus", $categoryName);
