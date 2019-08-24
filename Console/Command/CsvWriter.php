@@ -1,6 +1,7 @@
 <?php
 
 namespace Sagital\NopProductExporter\Console\Command;
+
 use Magento\Framework\App\Filesystem\DirectoryList;
 use Magento\Framework\App\Response\Http\FileFactory;
 
@@ -24,56 +25,34 @@ class CsvWriter
      */
     protected $exportAdapterFactory;
 
-
-
     /**
      * CsvWriter constructor.
      */
-    public function __construct(FileFactory $fileFactory,
+    public function __construct(
+        FileFactory $fileFactory,
                                 \Magento\ImportExport\Model\Export\Adapter\Factory $exportAdapterFac
-    )
-    {
+    ) {
         $this->fileFactory = $fileFactory;
         $this->exportAdapterFactory = $exportAdapterFac;
     }
 
-
-
-
-    public function writeCsv($products, $mappings, $categories, $fileName) {
-
+    public function writeCsv($products, $mappings, $categories, $fileName)
+    {
 
         /**
          * var \Magento\ImportExport\Model\Export\Adapter\Csv
          */
         $csvWriter = $this->exportAdapterFactory->create(\Magento\ImportExport\Model\Export\Adapter\Csv::class);
 
-        $headers = array('sku', 'attribute_set_code', 'product_type', 'product_websites', 'weight', 'product_online', 'tax_class_name', 'visibility', 'name', 'price', 'qty', 'categories', 'base_image', 'thumbnail_image', 'additional_images', 'small_image');
+        $headers = ['sku', 'attribute_set_code', 'product_type', 'product_websites', 'weight', 'product_online', 'tax_class_name', 'visibility', 'name', 'price', 'qty', 'categories', 'base_image', 'thumbnail_image', 'additional_images', 'small_image'];
 
         $csvWriter->setHeaderCols($headers);
 
-
         foreach ($products as $product) {
 
+            $categoriesText = $this->getCategoriesText($mappings[$product['id']], $categories);
 
-
-            $categoriesIds = $mappings[$product['id']];
-            $categoryNames = array('Default Category');
-
-
-            foreach ($categoriesIds as $categoriesId) {
-
-
-                if (array_key_exists($categoriesId, $categories)) {
-                    $categoryName = $categories[$categoriesId]['name'];
-                    $categoryName = str_replace("/", "-", $categoryName);
-                    $categoryNames[] = str_replace("+", "plus", $categoryName);
-                }
-            }
-
-            $categoriesText = join("/", $categoryNames);
-
-            $row = array();
+            $row = [];
 
             $row['sku'] = $product['sku'];
             $row['attribute_set_code'] = 'Default';
@@ -87,7 +66,6 @@ class CsvWriter
             $row['price'] = $product['price'];
             $row['qty'] = $product['stock_quantity'];
             $row['categories'] = $categoriesText;
-
 
             $images = $product['images'];
 
@@ -106,11 +84,7 @@ class CsvWriter
             $row['additional_images'] = join(",", $additionalImages);
 
             $csvWriter->writeRow($row);
-
-
-
         }
-
 
         return $this->fileFactory->create(
             $fileName,
@@ -118,10 +92,29 @@ class CsvWriter
             DirectoryList::VAR_DIR,
             'text/csv'
         );
-
     }
 
+    private function getCategoriesText($productCategories, $categoriesMap)
+    {
+        $parentCategoryId = 0;
+        $categoryNames = ['Default Category'];
 
+        $remaining = count($productCategories);
 
+        while ($remaining > 0) {
+            foreach ($categoriesMap as $categoryId => $category) {
+                if ($category['parent'] == $parentCategoryId) {
+                    $categoryName = $category['name'];
+                    $categoryName = str_replace("/", "-", $categoryName);
+                    $categoryNames[] = str_replace("+", "plus", $categoryName);
+                    $parentCategoryId = $categoryId;
+                    $remaining--;
+                }
+            }
+        }
 
+        $categoriesText = join("/", $categoryNames);
+
+        return $categoriesText;
+    }
 }

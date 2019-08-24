@@ -7,18 +7,17 @@ use Psr\Log\LoggerInterface;
 
 class NopClient
 {
-
     protected $url;
 
     private $client;
-    private $defaultHeaders;
+    public $defaultHeaders;
     private $logger;
 
-    public function __construct( LoggerInterface $logger,
+    public function __construct(
+        LoggerInterface $logger,
                                  \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig,
                                   OAuth $oauth
-                                 )
-    {
+                                 ) {
         $this->logger = \Magento\Framework\App\ObjectManager::getInstance()
             ->get(\Psr\Log\LoggerInterface::class);
         $this->client = new Client();
@@ -29,13 +28,12 @@ class NopClient
         $refreshToken = $oauth->getRefreshToken($authorizationCode);
         $accessToken = $oauth->getAccessToken($refreshToken);
 
-
+        $this->logger->debug($accessToken);
         $this->defaultHeaders = ['Authorization' => "Bearer " . $accessToken];
     }
 
     public function getCategoryMappings()
     {
-
         $page = 1;
         $mappings = [];
 
@@ -51,19 +49,15 @@ class NopClient
         }
 
         return $mappings;
-
     }
-
 
     public function getProductsBySku()
     {
-
-        $result = array();
+        $result = [];
 
         $page = 1;
 
-
-        while ( $products = $this->getProducts( $page)) {
+        while ($products = $this->getProducts($page)) {
             $page++;
             $this->logger->debug("Loading products page $page . ");
 
@@ -73,13 +67,10 @@ class NopClient
         }
 
         return $result;
-
     }
-
 
     public function getProducts($page, $last_update = null)
     {
-
         $params = [
             'limit' => 200,
             'page' => $page
@@ -89,45 +80,43 @@ class NopClient
             $params['updated_at_min'] = $last_update;
         }
 
-        $res = $this->client->get($this->url . "/api/products",
+        $res = $this->client->get(
+            $this->url . "/api/products",
             ['headers' => $this->defaultHeaders,
                 'query' => $params,
                 'connect_timeout' => 30
-            ]);
+            ]
+        );
 
         $products = json_decode($res->getBody(), true)['products'];
         return $products;
-
     }
-
-
 
     public function getProductCategoryMappings($page)
     {
-
         $params = [
             'limit' => 200,
             'page' => $page
         ];
 
-        $res = $this->client->get($this->url . "/api/product_category_mappings",
+        $res = $this->client->get(
+            $this->url . "/api/product_category_mappings",
 
             ['headers' => $this->defaultHeaders,
                 'connect_timeout' => 30,
-                'query' => $params]);
+                'query' => $params]
+        );
 
         $mappings = json_decode($res->getBody(), true)['product_category_mappings'];
 
         return array_reduce($mappings, function ($result, $item) {
             $result[$item['product_id']][] = $item['category_id'];
             return $result;
-        }, array());
+        }, []);
     }
-
 
     public function getCategories($page, $last_update = null)
     {
-
         $params = [
             'limit' => 200,
             'page' => $page
@@ -137,37 +126,30 @@ class NopClient
             $params['updated_at_min'] = $last_update;
         }
 
-        $res = $this->client->get($this->url . "/api/categories",
-            ['headers' => $this->defaultHeaders, 'connect_timeout' => 30, 'query' => $params]);
+        $res = $this->client->get(
+            $this->url . "/api/categories",
+            ['headers' => $this->defaultHeaders, 'connect_timeout' => 30, 'query' => $params]
+        );
 
         $categories = json_decode($res->getBody(), true)['categories'];
         return $categories;
-
     }
-
 
     public function loadAllCategories()
     {
-
         $page = 1;
 
-        $result = array();
+        $result = [];
 
-        while ( $categories = $this->getCategories( $page ) ) {
-
+        while ($categories = $this->getCategories($page)) {
             $this->logger->debug("Loading categories page $page . ");
             $page++;
 
             foreach ($categories as $category) {
                 $result[$category['id']] = $category;
             }
-
         }
 
         return $result;
-
-
     }
-
 }
-
