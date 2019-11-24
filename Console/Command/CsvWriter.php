@@ -152,13 +152,14 @@ class CsvWriter
             }
             $categoryName =   $categoriesMap[$id]['name'];
             $categoryName = str_replace("/", "-", $categoryName);
+            $categoryName = str_replace(",", "-", $categoryName);
             $categoryName = str_replace("+", "plus", $categoryName);
             $current .= "/" . $categoryName;
         }
 
         $categoryNames[] = $current;
 
-        $categoriesText = join(", ", $categoryNames);
+        $categoriesText = join(",", $categoryNames);
 
         return $categoriesText;
     }
